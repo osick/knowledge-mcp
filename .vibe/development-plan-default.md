@@ -54,45 +54,98 @@ This architecture addresses MCP protocol's text-only limitation by processing bi
 - [x] Success criteria are defined
 
 ### Tasks
-- [ ] Design Local MCP Server architecture (extended markitdown-mcp)
-- [ ] Design Remote RAG API architecture (FastAPI with endpoints)
-- [ ] Design Remote RAG MCP Server architecture (MCP wrapper)
-- [ ] Define document chunking strategy
-- [ ] Define embedding and vector storage approach
-- [ ] Design Qdrant collection schema and metadata structure
-- [ ] Design OpenShift deployment architecture (manifests, services, routes)
-- [ ] Define error handling and logging strategy
-- [ ] Create architecture.md document with all technical decisions
+*All completed*
 
 ### Completed
-*None yet*
+- [x] Design Local MCP Server architecture (new build using markitdown library)
+- [x] Design Remote RAG API architecture (FastAPI with async endpoints)
+- [x] Design Remote RAG MCP Server architecture (MCP wrapper, same container)
+- [x] Define document chunking strategy (RecursiveCharacterTextSplitter, 512 tokens, 50 overlap)
+- [x] Define embedding and vector storage approach (Azure OpenAI text-embedding-3-small, Qdrant)
+- [x] Design Qdrant collection schema and metadata structure (hybrid: default + user collections)
+- [x] Design OpenShift deployment architecture (single container, ConfigMap, Secret, Routes)
+- [x] Define error handling and logging strategy (JSON-structured logs, request tracing)
+- [x] Create architecture.md document with all technical decisions (arc42 format)
 
 ## Plan
 
 ### Phase Entrance Criteria:
-- [ ] Technical architecture is complete and documented
-- [ ] Tech stack decisions are made and justified
-- [ ] Architectural patterns are defined (component structure, data flow, etc.)
-- [ ] Non-functional requirements are addressed (scalability, security, performance)
-- [ ] Alternative approaches have been evaluated
+- [x] Technical architecture is complete and documented
+- [x] Tech stack decisions are made and justified
+- [x] Architectural patterns are defined (component structure, data flow, etc.)
+- [x] Non-functional requirements are addressed (scalability, security, performance)
+- [x] Alternative approaches have been evaluated
 
 ### Tasks
-- [ ] *To be added when this phase becomes active*
+*All completed*
 
 ### Completed
-*None yet*
+- [x] Define project directory structure for both components
+- [x] Create detailed implementation tasks with dependencies (6 phases documented)
+- [x] Define implementation order (Phase 1: Local MCP → Phase 2-4: Remote → Phase 5-6: Deployment/Testing)
+- [x] Design API contracts (Pydantic models documented in design.md)
+- [x] Design MCP tool schemas for both MCP servers
+- [x] Define test strategy (unit 80% coverage, integration, e2e, performance tests)
+- [x] Document development workflow and setup instructions
+- [x] Create comprehensive design.md document with naming conventions, design principles, component design, data modeling, implementation phases
 
 ## Code
 
 ### Phase Entrance Criteria:
-- [ ] Detailed implementation plan is complete
-- [ ] Work is broken down into specific, actionable tasks
-- [ ] Implementation order and dependencies are identified
-- [ ] Design document is complete with technical details
-- [ ] Risks and mitigation strategies are documented
+- [x] Detailed implementation plan is complete
+- [x] Work is broken down into specific, actionable tasks
+- [x] Implementation order and dependencies are identified
+- [x] Design document is complete with technical details
+- [x] Risks and mitigation strategies are documented
 
 ### Tasks
-- [ ] *To be added when this phase becomes active*
+
+**Phase 1: Local MCP Server (Week 1)**
+- [ ] Create project structure (local-mcp-server/)
+- [ ] Setup pyproject.toml with dependencies
+- [ ] Implement DocumentConverter (markitdown wrapper)
+- [ ] Implement IngestClient (HTTP client for Remote RAG API)
+- [ ] Implement MCP Server with 2 tools (convert_to_text, convert_and_ingest)
+- [ ] Write unit tests (80% coverage target)
+- [ ] Create README with setup instructions
+
+**Phase 2: Remote RAG API - Core Services (Week 2)**
+- [ ] Create project structure (remote-rag-server/)
+- [ ] Setup pyproject.toml with dependencies
+- [ ] Implement configuration management (pydantic Settings)
+- [ ] Implement ChunkerService (LangChain RecursiveCharacterTextSplitter)
+- [ ] Implement EmbedderService (Azure OpenAI embeddings)
+- [ ] Implement QdrantService (async client)
+- [ ] Verify LangChain 1.0 and openai 2.5 compatibility
+- [ ] Write unit tests for all services
+
+**Phase 3: Remote RAG API - HTTP Endpoints (Week 3)**
+- [ ] Implement FastAPI application structure
+- [ ] Implement Pydantic models (Request/Response)
+- [ ] Implement API authentication (API key middleware)
+- [ ] Implement 6 API endpoints
+- [ ] Implement error handling and logging (structlog)
+- [ ] Write API integration tests
+
+**Phase 4: Remote RAG MCP Server (Week 3-4)**
+- [ ] Implement MCP server in mcp/server.py
+- [ ] Implement 4 MCP tools (search, ingest_url, list_collections, get_document)
+- [ ] Implement main.py (run FastAPI + MCP concurrently)
+- [ ] Write integration tests for MCP tools
+
+**Phase 5: OpenShift Deployment (Week 4)**
+- [ ] Create Dockerfile (multi-stage build)
+- [ ] Create OpenShift manifests (deployment, service, route, configmap, secret)
+- [ ] Test locally with Docker
+- [ ] Deploy to OpenShift dev environment
+- [ ] Run smoke tests
+
+**Phase 6: Integration & E2E Testing (Week 5)**
+- [ ] Write E2E tests (Local MCP → Remote API → Qdrant)
+- [ ] Write E2E tests (Remote MCP → Remote API → Qdrant)
+- [ ] Run performance tests (latency, throughput)
+- [ ] Create user documentation (README, API docs)
+- [ ] Final code review and cleanup
 
 ### Completed
 *None yet*
@@ -137,6 +190,16 @@ This architecture addresses MCP protocol's text-only limitation by processing bi
 - **Decision**: Minimal security for first step (API key authentication only)
 - **Rationale**: Internal technical users, can enhance later
 - **Date**: 2025-10-19
+
+### Technology Stack (Architecture Phase)
+- **Decision**: Python 3.11+, Async-first (FastAPI, qdrant-client, openai)
+- **Chunking**: RecursiveCharacterTextSplitter (512 tokens, 50 overlap)
+- **Embeddings**: Azure OpenAI text-embedding-3-small (1536 dimensions)
+- **Deployment**: Single container (FastAPI + MCP server)
+- **Collections**: Hybrid strategy (default + user-defined collections)
+- **Local MCP**: New build using markitdown library (not fork)
+- **Date**: 2025-10-19
+- **Rationale**: See ADR-001 through ADR-005 in [architecture.md](.vibe/docs/architecture.md)
 
 ## Notes
 *Additional context and observations*
