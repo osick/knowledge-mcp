@@ -1,12 +1,12 @@
 # Design Document - Enterprise RAG System
 
-**Project Complexity**: 🏢 CORE (Small team, MVP timeline)
+**Project Complexity**: CORE (Small team, MVP timeline)
 **Version**: 1.0
 **Date**: 2025-10-19
 
 ---
 
-<!-- # 🚀 ESSENTIAL - Required for all projects -->
+<!-- # ESSENTIAL - Required for all projects -->
 
 ## 1. Naming Conventions
 

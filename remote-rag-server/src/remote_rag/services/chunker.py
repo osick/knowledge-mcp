@@ -1,7 +1,8 @@
 """Document chunking service using LangChain RecursiveCharacterTextSplitter."""
 
-from typing import List
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from remote_rag.config import settings
 
 
@@ -38,7 +39,7 @@ class ChunkerService:
             is_separator_regex=False,
         )
 
-    def chunk_text(self, text: str) -> List[str]:
+    def chunk_text(self, text: str) -> list[str]:
         """
         Split text into chunks.
 

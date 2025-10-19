@@ -1,16 +1,18 @@
 """Qdrant vector database service."""
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 from uuid import uuid4
+
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.models import (
     Distance,
-    VectorParams,
-    PointStruct,
-    Filter,
     FieldCondition,
+    Filter,
     MatchValue,
+    PointStruct,
+    VectorParams,
 )
+
 from remote_rag.config import settings
 
 
@@ -69,9 +71,9 @@ class QdrantService:
     async def upsert_points(
         self,
         collection_name: str,
-        embeddings: List[List[float]],
-        metadata_list: List[Dict[str, Any]],
-    ) -> List[str]:
+        embeddings: list[list[float]],
+        metadata_list: list[dict[str, Any]],
+    ) -> list[str]:
         """
         Insert or update points in a collection.
 
@@ -127,11 +129,11 @@ class QdrantService:
     async def search(
         self,
         collection_name: str,
-        query_vector: List[float],
+        query_vector: list[float],
         limit: int = 5,
         score_threshold: float = 0.0,
-        filter_conditions: Optional[Dict[str, Any]] = None,
-    ) -> List[Dict[str, Any]]:
+        filter_conditions: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search for similar vectors in a collection.
 
@@ -160,7 +162,7 @@ class QdrantService:
                             match=MatchValue(value=value),
                         )
                     )
-                query_filter = Filter(must=conditions)
+                query_filter = Filter(must=conditions)  # type: ignore[arg-type]
 
             # Perform search
             results = await self.client.search(
@@ -188,7 +190,7 @@ class QdrantService:
         self,
         collection_name: str,
         document_id: str,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """
         Retrieve a specific document by ID.
 
@@ -218,7 +220,7 @@ class QdrantService:
                 f"Failed to get document '{document_id}' from '{collection_name}': {str(e)}"
             ) from e
 
-    async def list_collections(self) -> List[str]:
+    async def list_collections(self) -> list[str]:
         """
         List all collections.
 
@@ -259,6 +261,6 @@ class QdrantService:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Async context manager exit."""
         await self.close()

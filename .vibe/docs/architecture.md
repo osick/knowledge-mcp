@@ -488,9 +488,9 @@ async def health():
 **Technology Stack:**
 - **FastAPI 0.119+**: Async web framework (latest stable: 0.119.0, Oct 2025)
 - **LangChain 1.0+**: RecursiveCharacterTextSplitter (latest stable: 1.0.0, Oct 2025)
-  - ⚠️ **Breaking Changes**: LangChain 1.0.0 is a major release - review migration guide during implementation
+  - **Note**: LangChain 1.0.0 is a major release - review migration guide during implementation
 - **openai 2.5+**: Azure OpenAI client (async) (latest stable: 2.5.0, Oct 2025)
-  - ⚠️ **Breaking Changes**: OpenAI v2.x has breaking changes from v1.x - verify Azure OpenAI compatibility
+  - **Note**: OpenAI v2.x has breaking changes from v1.x - verify Azure OpenAI compatibility
 - **qdrant-client 1.15+**: Async Qdrant client (latest stable: 1.15.1, Jul 2025)
 - **httpx 0.28+**: Async HTTP client for URL fetching (latest stable: 0.28.1)
 - **markitdown 0.1.3**: Document conversion for URLs (Microsoft library, early release, Aug 2025)

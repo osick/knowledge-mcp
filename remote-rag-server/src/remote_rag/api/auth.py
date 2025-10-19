@@ -1,12 +1,14 @@
 """API key authentication middleware."""
 
-from typing import Callable
-from fastapi import Request, HTTPException, status
+from collections.abc import Callable
+
+from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
+
 from remote_rag.config import settings
 
 
-async def api_key_middleware(request: Request, call_next: Callable) -> JSONResponse:
+async def api_key_middleware(request: Request, call_next: Callable) -> JSONResponse:  # type: ignore[type-arg]
     """
     Middleware to validate API key authentication.
 
@@ -22,7 +24,7 @@ async def api_key_middleware(request: Request, call_next: Callable) -> JSONRespo
     """
     # Skip authentication for health check endpoint
     if request.url.path == "/health":
-        return await call_next(request)
+        return await call_next(request)  # type: ignore[no-any-return]
 
     # Check for API key in header
     api_key = request.headers.get("X-API-Key")
@@ -42,4 +44,4 @@ async def api_key_middleware(request: Request, call_next: Callable) -> JSONRespo
 
     # API key is valid, proceed with request
     response = await call_next(request)
-    return response
+    return response  # type: ignore[no-any-return]

@@ -97,47 +97,47 @@ TOTAL                             166     15    91%
 ### test_converter.py
 
 **Success Cases:**
-- ✅ Convert text files
-- ✅ Convert markdown files
-- ✅ Convert HTML files
-- ✅ Convert large files (10KB+)
-- ✅ Convert empty files
-- ✅ Handle special characters in filenames
+- Convert text files
+- Convert markdown files
+- Convert HTML files
+- Convert large files (10KB+)
+- Convert empty files
+- Handle special characters in filenames
 
 **Error Cases:**
-- ✅ Nonexistent files (FileNotFoundError)
-- ✅ Directories (DocumentConversionError)
-- ✅ Invalid paths
+- Nonexistent files (FileNotFoundError)
+- Directories (DocumentConversionError)
+- Invalid paths
 
 **Metadata Extraction:**
-- ✅ Filename extraction
-- ✅ Extension extraction (.txt, .md, .html)
-- ✅ File size calculation
-- ✅ No extension handling
-- ✅ Multiple extensions (file.tar.gz)
+- Filename extraction
+- Extension extraction (.txt, .md, .html)
+- File size calculation
+- No extension handling
+- Multiple extensions (file.tar.gz)
 
 ### test_ingest_client.py
 
 **Success Cases:**
-- ✅ Basic ingestion
-- ✅ Default collection
-- ✅ Custom collection
-- ✅ Additional metadata
-- ✅ Long content (160KB+)
+- Basic ingestion
+- Default collection
+- Custom collection
+- Additional metadata
+- Long content (160KB+)
 
 **HTTP Error Cases:**
-- ✅ 401 Unauthorized
-- ✅ 400 Bad Request
-- ✅ 500 Server Error
-- ✅ Network timeout
-- ✅ Connection refused
+- 401 Unauthorized
+- 400 Bad Request
+- 500 Server Error
+- Network timeout
+- Connection refused
 
 **Client Management:**
-- ✅ Initialization
-- ✅ URL normalization (trailing slashes)
-- ✅ Client creation and reuse
-- ✅ Context manager usage
-- ✅ Proper cleanup on close
+- Initialization
+- URL normalization (trailing slashes)
+- Client creation and reuse
+- Context manager usage
+- Proper cleanup on close
 
 ## Code Quality Checks
 
@@ -317,7 +317,7 @@ Or use this one-liner:
 uv run pytest --cov=local_mcp --cov-report=term-missing && \
 uv run ruff check src/ tests/ && \
 uv run mypy src/ && \
-echo "✅ All checks passed!"
+echo "All checks passed!"
 ```
 
 ## CI/CD Integration (Future)

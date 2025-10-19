@@ -1,7 +1,8 @@
 """Embedding service using Azure OpenAI."""
 
-from typing import List
+
 from openai import AsyncAzureOpenAI
+
 from remote_rag.config import settings
 
 
@@ -24,7 +25,7 @@ class EmbedderService:
         self.deployment = settings.azure_openai_embedding_deployment
         self.dimensions = settings.azure_openai_embedding_dimensions
 
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str) -> list[float]:
         """
         Generate embedding vector for a single text.
 
@@ -63,7 +64,7 @@ class EmbedderService:
                 raise
             raise EmbeddingError(f"Failed to generate embedding: {str(e)}") from e
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """
         Generate embedding vectors for multiple texts in a batch.
 
@@ -129,6 +130,6 @@ class EmbedderService:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+    async def __aexit__(self, exc_type: object, exc_val: object, exc_tb: object) -> None:
         """Async context manager exit."""
         await self.close()

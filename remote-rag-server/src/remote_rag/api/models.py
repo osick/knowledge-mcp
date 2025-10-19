@@ -1,8 +1,8 @@
 """Pydantic models for API requests and responses."""
 
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field, HttpUrl
+from typing import Any
 
+from pydantic import BaseModel, Field, HttpUrl
 
 # Request Models
 
@@ -11,10 +11,10 @@ class IngestRequest(BaseModel):
     """Request model for text ingestion."""
 
     text: str = Field(..., description="Text content to ingest", min_length=1)
-    collection_name: Optional[str] = Field(
+    collection_name: str | None = Field(
         None, description="Collection name (defaults to 'default')"
     )
-    metadata: Optional[Dict[str, Any]] = Field(
+    metadata: dict[str, Any] | None = Field(
         None, description="Optional metadata to attach to the document"
     )
 
@@ -23,10 +23,10 @@ class IngestURLRequest(BaseModel):
     """Request model for URL-based document ingestion."""
 
     url: HttpUrl = Field(..., description="HTTPS URL of the document to ingest")
-    collection_name: Optional[str] = Field(
+    collection_name: str | None = Field(
         None, description="Collection name (defaults to 'default')"
     )
-    metadata: Optional[Dict[str, Any]] = Field(
+    metadata: dict[str, Any] | None = Field(
         None, description="Optional metadata to attach to the document"
     )
 
@@ -35,14 +35,14 @@ class SearchRequest(BaseModel):
     """Request model for semantic search."""
 
     query: str = Field(..., description="Search query text", min_length=1)
-    collection_name: Optional[str] = Field(
+    collection_name: str | None = Field(
         None, description="Collection name (defaults to 'default')"
     )
     limit: int = Field(5, description="Maximum number of results", ge=1, le=100)
     score_threshold: float = Field(
         0.0, description="Minimum similarity score (0.0 to 1.0)", ge=0.0, le=1.0
     )
-    filter: Optional[Dict[str, Any]] = Field(
+    filter: dict[str, Any] | None = Field(
         None, description="Optional metadata filters"
     )
 
@@ -65,8 +65,8 @@ class IngestResponse(BaseModel):
     message: str = Field(..., description="Status message")
     collection_name: str = Field(..., description="Collection where data was stored")
     chunks_created: int = Field(..., description="Number of chunks created")
-    chunk_ids: List[str] = Field(..., description="IDs of created chunks in Qdrant")
-    chunks: Optional[List[ChunkInfo]] = Field(
+    chunk_ids: list[str] = Field(..., description="IDs of created chunks in Qdrant")
+    chunks: list[ChunkInfo] | None = Field(
         None, description="Detailed chunk information"
     )
 
@@ -79,7 +79,7 @@ class IngestURLResponse(BaseModel):
     url: str = Field(..., description="URL that was processed")
     collection_name: str = Field(..., description="Collection where data was stored")
     chunks_created: int = Field(..., description="Number of chunks created")
-    chunk_ids: List[str] = Field(..., description="IDs of created chunks in Qdrant")
+    chunk_ids: list[str] = Field(..., description="IDs of created chunks in Qdrant")
     document_length: int = Field(..., description="Length of converted document text")
 
 
@@ -89,7 +89,7 @@ class SearchResult(BaseModel):
     id: str = Field(..., description="Document/chunk ID")
     score: float = Field(..., description="Similarity score (0.0 to 1.0)")
     text: str = Field(..., description="Text content of the chunk")
-    metadata: Dict[str, Any] = Field(..., description="Attached metadata")
+    metadata: dict[str, Any] = Field(..., description="Attached metadata")
 
 
 class SearchResponse(BaseModel):
@@ -98,7 +98,7 @@ class SearchResponse(BaseModel):
     success: bool = Field(..., description="Whether search was successful")
     query: str = Field(..., description="Original query text")
     collection_name: str = Field(..., description="Collection that was searched")
-    results: List[SearchResult] = Field(..., description="List of search results")
+    results: list[SearchResult] = Field(..., description="List of search results")
     count: int = Field(..., description="Number of results returned")
 
 
@@ -112,7 +112,7 @@ class CollectionsResponse(BaseModel):
     """Response model for listing collections."""
 
     success: bool = Field(..., description="Whether operation was successful")
-    collections: List[str] = Field(..., description="List of collection names")
+    collections: list[str] = Field(..., description="List of collection names")
     count: int = Field(..., description="Number of collections")
 
 
@@ -122,8 +122,8 @@ class DocumentResponse(BaseModel):
     success: bool = Field(..., description="Whether retrieval was successful")
     document_id: str = Field(..., description="Document ID")
     collection_name: str = Field(..., description="Collection name")
-    text: Optional[str] = Field(None, description="Document text content")
-    metadata: Optional[Dict[str, Any]] = Field(None, description="Document metadata")
+    text: str | None = Field(None, description="Document text content")
+    metadata: dict[str, Any] | None = Field(None, description="Document metadata")
     found: bool = Field(..., description="Whether document was found")
 
 
@@ -133,7 +133,7 @@ class ErrorResponse(BaseModel):
     success: bool = Field(False, description="Always false for errors")
     error: str = Field(..., description="Error type")
     message: str = Field(..., description="Error message")
-    details: Optional[Dict[str, Any]] = Field(None, description="Additional error details")
+    details: dict[str, Any] | None = Field(None, description="Additional error details")
 
 
 class HealthResponse(BaseModel):
@@ -141,4 +141,4 @@ class HealthResponse(BaseModel):
 
     status: str = Field(..., description="Health status")
     version: str = Field(..., description="API version")
-    services: Dict[str, str] = Field(..., description="Status of dependent services")
+    services: dict[str, str] = Field(..., description="Status of dependent services")
