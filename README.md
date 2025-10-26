@@ -1,29 +1,62 @@
 # Enterprise RAG System with MCP Integration
 
-A production-ready Retrieval-Augmented Generation (RAG) system designed for enterprise document management and semantic search. The system separates local document processing from remote vector operations, optimized for AI assistant integration via the Model Context Protocol (MCP).
+A production-ready Retrieval-Augmented Generation (RAG) system designed for enterprise document management and semantic search. The system provides **two complementary RAG solutions** optimized for AI assistant integration via the Model Context Protocol (MCP).
 
 ## Overview
 
-This system addresses the challenge of processing binary documents (PDF, DOCX, XLSX, etc.) in AI assistant workflows by splitting responsibilities between local and remote components:
+This repository contains **three MCP servers** for different RAG use cases:
 
-- **Local processing** handles binary-to-text conversion
-- **Remote processing** handles vector embeddings and semantic search
-- **MCP protocol** enables direct AI assistant integration
+### 1. **Qdrant RAG System** (Phases 1-3: Complete)
+A full-featured document ingestion and search pipeline with character-based chunking:
+- **Local MCP Server** - Document conversion using markitdown
+- **Remote RAG API** - FastAPI service with Qdrant vector storage
+- **Remote MCP Server** - MCP wrapper for RAG API (Phase 4)
+
+**Best for:** Simple text documents, high-volume ingestion, pure vector similarity search
+
+### 2. **Document Intelligence MCP** (New: Standalone)
+A lightweight read-only search interface for Azure AI Search indexes:
+- **Single local MCP server** - Direct Azure AI Search integration
+- **Hybrid search** - Combines keyword + vector similarity
+- **Pre-indexed documents** - Searches existing Azure AI Search indexes
+
+**Best for:** Complex structured documents, hybrid search, reading pre-populated indexes
+
+---
+
+## System Comparison
+
+| Feature | Qdrant RAG | Document Intelligence MCP |
+|---------|------------|---------------------------|
+| **Architecture** | Local + Remote (3 components) | Standalone local (1 component) |
+| **Document Ingestion** | ✅ Yes (via Remote API) | ❌ No (MVP - read only) |
+| **Search Type** | Vector similarity only | Hybrid (keyword + vector) |
+| **Chunking** | Character-based (512 chars) | Semantic (pre-chunked) |
+| **Storage** | Qdrant vector database | Azure AI Search indexes |
+| **Setup Complexity** | Higher (requires deployment) | Lower (just credentials) |
+| **Use Case** | New document pipelines | Existing Azure Search indexes |
 
 ## Architecture
 
-### High-Level Architecture
+### High-Level Architecture - Complete System
 
 ```mermaid
 graph TB
-    subgraph "Local Environment"
+    subgraph "AI Assistant Environment"
         AI[AI Assistant<br/>Claude, GPT, etc.]
-        LocalMCP[Local MCP Server<br/>Document Conversion]
-        Files[Local Documents<br/>PDF, DOCX, XLSX, etc.]
+    end
+
+    subgraph "Local MCP Servers"
+        LocalMCP[Local MCP Server<br/>Qdrant: Document Conversion]
+        DocIntMCP[Document Intelligence MCP<br/>Azure Search Integration]
+    end
+
+    subgraph "Local Documents"
+        Files[PDF, DOCX, XLSX, etc.]
     end
 
     subgraph "Remote Environment - OpenShift"
-        RemoteMCP[Remote MCP Server<br/>MCP Protocol Wrapper]
+        RemoteMCP[Remote MCP Server<br/>Qdrant: MCP Wrapper]
         API[Remote RAG API<br/>FastAPI REST]
 
         subgraph "Services"
@@ -33,20 +66,28 @@ graph TB
         end
 
         Qdrant[(Qdrant<br/>Vector Database)]
+    end
+
+    subgraph "Azure Cloud Services"
+        AzureSearch[Azure AI Search<br/>Pre-populated Indexes]
         AzureOpenAI[Azure OpenAI<br/>Embeddings API]
     end
 
     AI -->|MCP Protocol| LocalMCP
+    AI -->|MCP Protocol| DocIntMCP
     AI -->|MCP Protocol| RemoteMCP
 
     LocalMCP -->|Read| Files
     LocalMCP -->|HTTP POST /ingest| API
+    DocIntMCP -->|Azure SDK| AzureSearch
 
     RemoteMCP -->|HTTP Requests| API
 
     API --> Chunker
     API --> Embedder
     API --> QdrantSvc
+    QdrantSvc --> Qdrant
+    Embedder --> AzureOpenAI
 
     Embedder -->|API Calls| AzureOpenAI
     QdrantSvc -->|Vector Ops| Qdrant
@@ -344,55 +385,57 @@ flowchart LR
 ## Project Structure
 
 ```
-qdrant-full-mcp/
-├── README.md                          # This file
+knowledge-mcp/
+├── README.md                          # This file (overview)
 ├── .gitignore                         # Git ignore rules
 │
-├── local-mcp-server/                  # Local document conversion
-│   ├── src/
-│   │   └── local_mcp/
-│   │       ├── __init__.py
-│   │       ├── config.py              # Configuration
-│   │       ├── converter.py           # DocumentConverter (markitdown)
-│   │       ├── ingest_client.py       # IngestClient (HTTP to Remote API)
-│   │       └── server.py              # MCP Server (2 tools)
-│   ├── tests/
-│   │   ├── conftest.py                # Shared test fixtures
-│   │   ├── test_converter.py          # Conversion tests (30+)
-│   │   └── test_ingest_client.py      # HTTP client tests (25+)
-│   ├── pyproject.toml                 # Dependencies
-│   ├── README.md                      # Local MCP documentation
-│   ├── TESTING.md                     # Testing guide
-│   └── .env.example                   # Configuration template
+├── local-mcp-server/                  # Qdrant: Local document conversion
+│   ├── src/local_mcp/
+│   │   ├── config.py              # Configuration
+│   │   ├── converter.py           # DocumentConverter (markitdown)
+│   │   ├── ingest_client.py       # IngestClient (HTTP to Remote API)
+│   │   └── server.py              # MCP Server (2 tools)
+│   ├── tests/                     # 55+ tests, 90%+ coverage
+│   ├── pyproject.toml
+│   ├── README.md
+│   └── .env.example
 │
-├── remote-rag-server/                 # Remote RAG API
-│   ├── src/
-│   │   └── remote_rag/
-│   │       ├── __init__.py
-│   │       ├── config.py              # Configuration
-│   │       ├── api/
-│   │       │   ├── app.py             # FastAPI application (6 endpoints)
-│   │       │   ├── auth.py            # API key authentication
-│   │       │   ├── logging.py         # Structured logging
-│   │       │   └── models.py          # Pydantic request/response models
-│   │       ├── services/
-│   │       │   ├── chunker.py         # ChunkerService (LangChain)
-│   │       │   ├── embedder.py        # EmbedderService (Azure OpenAI)
-│   │       │   └── qdrant.py          # QdrantService (vector ops)
-│   │       └── mcp/                   # (Phase 4: MCP Server)
-│   │           └── server.py          # MCP protocol wrapper
-│   ├── tests/
-│   │   ├── unit/                      # Unit tests (62 tests)
-│   │   │   ├── test_chunker.py
-│   │   │   ├── test_embedder.py
-│   │   │   └── test_qdrant.py
-│   │   └── integration/               # API tests (21 tests)
-│   │       ├── conftest.py
-│   │       └── test_api.py
-│   ├── pyproject.toml                 # Dependencies
-│   ├── README.md                      # Remote RAG documentation
-│   ├── API_DOCUMENTATION.md           # Complete API reference
-│   └── .env.example                   # Configuration template
+├── remote-rag-server/                 # Qdrant: Remote RAG API
+│   ├── src/remote_rag/
+│   │   ├── config.py              # Configuration
+│   │   ├── api/
+│   │   │   ├── app.py             # FastAPI application (6 endpoints)
+│   │   │   ├── auth.py            # API key authentication
+│   │   │   ├── logging.py         # Structured logging
+│   │   │   └── models.py          # Pydantic models
+│   │   ├── services/
+│   │   │   ├── chunker.py         # ChunkerService (LangChain)
+│   │   │   ├── embedder.py        # EmbedderService (Azure OpenAI)
+│   │   │   └── qdrant.py          # QdrantService (vector ops)
+│   │   └── mcp/                   # (Phase 4: MCP Server)
+│   │       └── server.py          # MCP protocol wrapper
+│   ├── tests/                     # 83 tests, 89% coverage
+│   ├── pyproject.toml
+│   ├── README.md
+│   ├── API_DOCUMENTATION.md       # Complete API reference
+│   └── .env.example
+│
+├── docint-mcp-server/                 # NEW: Document Intelligence MCP
+│   ├── src/docint_mcp/
+│   │   ├── config.py              # Configuration
+│   │   ├── models.py              # Data models
+│   │   ├── azure_search_client.py # Azure AI Search wrapper
+│   │   └── server.py              # MCP Server (3 tools)
+│   ├── tests/                     # 17+ tests, 89% coverage
+│   │   ├── conftest.py
+│   │   ├── test_azure_search_client.py
+│   │   └── test_server.py
+│   ├── pyproject.toml
+│   ├── README.md
+│   └── .env.example
+│
+├── docs/                              # Specifications and guides
+│   └── AZURE_DOC_INTELLIGENCE_SPEC.md # Document Intelligence spec
 │
 └── .vibe/                             # Development planning
     ├── development-plan-default.md    # Project plan and progress
@@ -405,12 +448,71 @@ qdrant-full-mcp/
 
 ### Prerequisites
 
+**For Qdrant RAG System:**
 - Python 3.11 or higher
 - Azure OpenAI API access (for embeddings)
 - Qdrant instance (local or cloud)
 - OpenShift cluster (for production deployment)
 
-### 1. Setup Local MCP Server
+**For Document Intelligence MCP:**
+- Python 3.11 or higher
+- Azure AI Search service with pre-populated indexes
+- Azure AI Search API key (admin or query key)
+
+### Option 1: Setup Document Intelligence MCP (Fastest!)
+
+For quick read-only access to existing Azure AI Search indexes:
+
+```bash
+cd docint-mcp-server
+
+# Install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
+
+# Configure
+cp .env.example .env
+# Edit .env with your Azure AI Search endpoint and key
+
+# Run tests
+uv run pytest -v
+
+# Test coverage
+uv run pytest --cov=docint_mcp --cov-report=term-missing
+```
+
+**Usage with Claude Desktop:**
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "docint": {
+      "command": "/path/to/docint-mcp-server/.venv/bin/python",
+      "args": ["-m", "docint_mcp.server"],
+      "env": {
+        "AZURE_SEARCH_ENDPOINT": "https://your-search.search.windows.net",
+        "AZURE_SEARCH_KEY": "your-key"
+      }
+    }
+  }
+}
+```
+
+**Available Tools:**
+- `search_documents` - Search indexes with hybrid search
+- `list_indexes` - List available indexes
+- `get_document` - Retrieve document by ID
+
+---
+
+### Option 2: Setup Qdrant RAG System (Full Pipeline)
+
+For complete document ingestion and search pipeline:
+
+#### 2.1. Setup Local MCP Server
 
 ```bash
 cd local-mcp-server
@@ -428,7 +530,7 @@ cp .env.example .env
 uv run pytest -v
 ```
 
-### 2. Setup Remote RAG API
+#### 2.2. Setup Remote RAG API
 
 ```bash
 cd remote-rag-server
@@ -449,7 +551,7 @@ uv run pytest -v
 uvicorn remote_rag.api.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### 3. Test the System
+#### 2.3. Test the Qdrant System
 
 ```bash
 # Test health endpoint
@@ -478,18 +580,32 @@ curl -X POST http://localhost:8000/search \
 
 ## Configuration
 
-### Local MCP Server Configuration
+### Document Intelligence MCP Configuration
 
-Key settings in `.env`:
+Key settings in `docint-mcp-server/.env`:
+```bash
+# Azure AI Search (required)
+AZURE_SEARCH_ENDPOINT=https://your-search-service.search.windows.net
+AZURE_SEARCH_KEY=your-admin-or-query-key
+
+# Optional defaults
+DEFAULT_INDEX_NAME=default
+DEFAULT_TOP_RESULTS=5
+MAX_TOP_RESULTS=50
+```
+
+### Qdrant Local MCP Server Configuration
+
+Key settings in `local-mcp-server/.env`:
 ```bash
 # Remote RAG API connection
 REMOTE_RAG_API_URL=http://localhost:8000
 REMOTE_RAG_API_KEY=your-api-key
 ```
 
-### Remote RAG API Configuration
+### Qdrant Remote RAG API Configuration
 
-Key settings in `.env`:
+Key settings in `remote-rag-server/.env`:
 ```bash
 # Azure OpenAI (required)
 AZURE_OPENAI_API_KEY=your-azure-key
@@ -543,30 +659,30 @@ See deployment documentation (Phase 5) for detailed instructions.
 
 ## Testing
 
-### Test Coverage
+### Test Coverage Summary
 
-**Local MCP Server**:
-- 55+ unit tests
-- 90%+ code coverage
-- Tests: conversion, HTTP client, error handling
-
-**Remote RAG API**:
-- 83 total tests (62 unit + 21 integration)
-- 89% code coverage
-- Tests: services, endpoints, authentication, errors
+| Component | Tests | Coverage | Description |
+|-----------|-------|----------|-------------|
+| **Document Intelligence MCP** | 17+ | 89% | Azure Search client, MCP tools |
+| **Local MCP Server (Qdrant)** | 55+ | 90%+ | Document conversion, HTTP client |
+| **Remote RAG API (Qdrant)** | 83 | 89% | Services, endpoints, authentication |
 
 ### Running Tests
 
 ```bash
-# Local MCP Server
+# Document Intelligence MCP
+cd docint-mcp-server
+uv run pytest --cov=docint_mcp --cov-report=term-missing
+
+# Local MCP Server (Qdrant)
 cd local-mcp-server
 uv run pytest --cov=local_mcp --cov-report=term-missing
 
-# Remote RAG API
+# Remote RAG API (Qdrant)
 cd remote-rag-server
 uv run pytest --cov=remote_rag --cov-report=term-missing
 
-# Code quality
+# Code quality (any component)
 uv run ruff check src/
 uv run mypy src/
 ```
@@ -644,27 +760,48 @@ See component-specific README files for detailed troubleshooting.
 
 ## Development Status
 
-### Completed (Phases 1-3)
-- **Phase 1**: Local MCP Server - Document conversion and ingestion
-- **Phase 2**: Remote RAG API - Core services (chunking, embedding, vector storage)
-- **Phase 3**: Remote RAG API - HTTP endpoints, authentication, comprehensive testing
+### Completed
+
+**Qdrant RAG System:**
+- ✅ **Phase 1**: Local MCP Server - Document conversion and ingestion
+- ✅ **Phase 2**: Remote RAG API - Core services (chunking, embedding, vector storage)
+- ✅ **Phase 3**: Remote RAG API - HTTP endpoints, authentication, comprehensive testing
+
+**Document Intelligence MCP:**
+- ✅ **Phase 1**: Azure Search client implementation (17+ tests, 89% coverage)
+- 🚧 **Phase 2**: MCP server with 3 tools (in progress)
+- ⏳ **Phase 3**: Documentation and manual testing
 
 ### In Progress
-- **Phase 4**: Remote MCP Server - MCP protocol wrapper for RAG API
+- **Qdrant Phase 4**: Remote MCP Server - MCP protocol wrapper for RAG API
+- **DocInt Phase 2**: MCP server implementation
 
 ### Planned
-- **Phase 5**: OpenShift deployment - Container, manifests, deployment scripts
-- **Phase 6**: Integration testing - End-to-end testing, performance testing
+- **Qdrant Phase 5**: OpenShift deployment - Container, manifests, deployment scripts
+- **Qdrant Phase 6**: Integration testing - End-to-end testing, performance testing
+- **DocInt Phase 4** (Future): Document ingestion with Azure Document Intelligence analysis
 
 ## Documentation
 
-- **Top-level README** (this file): Architecture and overview
+### Main Documentation
+- **README.md** (this file): Complete system overview and quick start
+- **docs/AZURE_DOC_INTELLIGENCE_SPEC.md**: Document Intelligence MCP specification
+
+### Component Documentation
+
+**Document Intelligence MCP:**
+- **docint-mcp-server/README.md**: Setup, configuration, and usage guide
+
+**Qdrant RAG System:**
 - **local-mcp-server/README.md**: Local MCP Server documentation
 - **local-mcp-server/TESTING.md**: Testing guide for Local MCP
 - **remote-rag-server/README.md**: Remote RAG API documentation
 - **remote-rag-server/API_DOCUMENTATION.md**: Complete API reference with examples
+
+### Architecture and Design
 - **.vibe/docs/architecture.md**: Architecture decisions and rationale
 - **.vibe/docs/design.md**: Design specifications and conventions
+- **.vibe/development-plan-default.md**: Project plan and progress
 
 ## Contributing
 
